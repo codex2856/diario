@@ -126,6 +126,9 @@ def summary_is_redundant(title, summary):
     t, s = normalize(title), normalize(summary)
     if not s:
         return True
+    # hnrss pone "Article URL: … Comments URL: … Points: …" como descripción
+    if summary.startswith("Article URL:") or summary.startswith("Comments URL:"):
+        return True
     return s == t or t.startswith(s) or (s.startswith(t) and len(s) - len(t) < 15)
 
 
