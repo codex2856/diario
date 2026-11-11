@@ -1,4 +1,5 @@
 name: Noticias
+# Actualiza news.json a las 7, 12 y 19 h de Arnhem (Europe/Amsterdam).
 
 on:
   schedule:
