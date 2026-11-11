@@ -207,7 +207,8 @@ def parse_feed(data, source, now=None):
     # Más recientes primero; las que no traen fecha, al final y en su orden original.
     out.sort(key=lambda x: x["_date"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
     for x in out:
-        del x["_date"]
+        d = x.pop("_date")
+        x["published"] = d.astimezone(timezone.utc).isoformat(timespec="seconds") if d else ""
     return out
 
 

@@ -160,6 +160,10 @@
     font: 0.72rem/1.2 system-ui, -apple-system, sans-serif;
     text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
   }
+  .when {
+    font: 0.72rem/1.2 system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.04em; color: var(--muted);
+  }
   article.lead h3 { font-size: clamp(1.45rem, 5.5vw, 2.1rem); line-height: 1.12; font-weight: 900; }
   article.lead p { font-size: 1.03rem; }
   .empty { font-style: italic; color: var(--muted); padding: 0.6rem 0; }
@@ -224,7 +228,7 @@
     updated: new Date().toISOString(),
     sections: [
       { id: "mundo", title: "Mundo", items: [
-        { title: "Titular principal de ejemplo: la cumbre internacional termina con un acuerdo histórico", summary: "Este es un resumen de ejemplo de unas dos líneas para ver cómo queda el titular principal de cada sección en la página.", source: "BBC Mundo", link: "https://www.bbc.com/mundo" },
+        { title: "Titular principal de ejemplo: la cumbre internacional termina con un acuerdo histórico", summary: "Este es un resumen de ejemplo de unas dos líneas para ver cómo queda el titular principal de cada sección en la página.", source: "BBC Mundo", link: "https://www.bbc.com/mundo", published: new Date(Date.now() - 36e5).toISOString() },
         { title: "Noticia de ejemplo sobre la economía global", summary: "Resumen corto de ejemplo.", source: "BBC Mundo", link: "https://www.bbc.com/mundo#1" },
         { title: "Otra noticia de ejemplo sin resumen", summary: "", source: "BBC Mundo", link: "https://www.bbc.com/mundo#2" },
         { title: "Un titular de ejemplo un poco más largo para comprobar que el texto se ajusta bien en pantallas pequeñas", summary: "Resumen de ejemplo.", source: "BBC Mundo", link: "https://www.bbc.com/mundo#3" }
@@ -307,12 +311,28 @@
     document.getElementById("edition").textContent = "Arnhem · " + editionName(upd && !isNaN(upd) ? upd : now);
   }
 
+  // "hoy, 21:30", "ayer, 18:05" o "9 nov, 10:15" en hora de Arnhem.
+  function formatPublished(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d)) return "";
+    var day = function (x) { return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(x); };
+    var time = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: TZ }).format(d);
+    var now = new Date();
+    if (day(d) === day(now)) return "hoy, " + time;
+    if (day(d) === day(new Date(now.getTime() - 864e5))) return "ayer, " + time;
+    return new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", timeZone: TZ }).format(d) + ", " + time;
+  }
+
   function renderArticle(item, isLead) {
     var summary = item.summary ? "<p>" + esc(item.summary) + "</p>" : "";
+    var when = formatPublished(item.published);
     return '<article' + (isLead ? ' class="lead"' : '') + '>' +
       '<a class="story" href="' + esc(safeUrl(item.link)) + '" target="_blank" rel="noopener noreferrer">' +
       "<h3>" + esc(item.title) + "</h3>" + summary +
-      '<span class="source">' + esc(item.source) + "</span></a></article>";
+      '<span class="source">' + esc(item.source) + "</span>" +
+      (when ? ' <span class="when">· ' + esc(when) + "</span>" : "") +
+      "</a></article>";
   }
 
   var sectionIds = [];
