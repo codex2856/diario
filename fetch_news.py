@@ -8,16 +8,23 @@ import html
 import json
 import re
 import sys
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 OUTPUT = Path(__file__).with_name("news.json")
 MAX_ITEMS = 6
+MAX_AGE = timedelta(hours=24)  # las noticias más antiguas se descartan
 SUMMARY_LEN = 200
 TIMEOUT = 20
 USER_AGENT = "Mozilla/5.0 (compatible; ElDiarioDeWilfredo/1.0; +https://github.com)"
+
+# Medios cuyos titulares y resúmenes se traducen al español (medio -> idioma original).
+TRANSLATE = {"NOS": "nl", "DutchNews": "en"}
+TRANSLATE_URL = "https://translate.googleapis.com/translate_a/single"
 
 SECTIONS = [
     {
@@ -56,6 +63,14 @@ SECTIONS = [
         "feeds": [
             ("NOS", "https://feeds.nos.nl/nosnieuwsalgemeen"),
             ("DutchNews", "https://www.dutchnews.nl/feed/"),
+        ],
+    },
+    {
+        "id": "espana",
+        "title": "España",
+        "feeds": [
+            ("El País", "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/espana/portada"),
+            ("El Mundo", "https://e00-elmundo.uecdn.es/elmundo/rss/espana.xml"),
         ],
     },
     {
@@ -150,7 +165,27 @@ def link_of(item):
     return ""
 
 
-def parse_feed(data, source):
+def date_of(item):
+    """Fecha de publicación (RSS pubDate / Atom published|updated / dc:date), o None."""
+    for name in ("pubdate", "published", "updated", "date"):
+        raw = text_of(child(item, name))
+        if not raw:
+            continue
+        try:
+            d = parsedate_to_datetime(raw)
+        except (TypeError, ValueError):
+            try:
+                d = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+        if d.tzinfo is None:
+            d = d.replace(tzinfo=timezone.utc)
+        return d
+    return None
+
+
+def parse_feed(data, source, now=None):
+    now = now or datetime.now(timezone.utc)
     root = ET.fromstring(data)
     items = [el for el in root.iter() if local(el.tag) in ("item", "entry")]
     out = []
@@ -159,11 +194,20 @@ def parse_feed(data, source):
         link = link_of(it)
         if not title or not link.startswith("http"):
             continue
+        published = date_of(it)
+        if published is not None and now - published > MAX_AGE:
+            continue  # noticia vieja
         raw = text_of(child(it, "description", "summary", "content", "encoded"))
         summary = shorten(clean_html(raw))
         if summary_is_redundant(title, summary):
             summary = ""
-        out.append({"title": title, "summary": summary, "source": source, "link": link})
+        out.append(
+            {"title": title, "summary": summary, "source": source, "link": link, "_date": published}
+        )
+    # Más recientes primero; las que no traen fecha, al final y en su orden original.
+    out.sort(key=lambda x: x["_date"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    for x in out:
+        del x["_date"]
     return out
 
 
@@ -177,6 +221,39 @@ def fetch(url):
     )
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
         return resp.read()
+
+
+def translate(text, source_lang):
+    """Traduce al español con el servicio público de Google Translate.
+
+    Si falla, devuelve None y quien llama se queda con el texto original.
+    """
+    if not text:
+        return text
+    query = urllib.parse.urlencode(
+        {"client": "gtx", "sl": source_lang, "tl": "es", "dt": "t", "q": text}
+    )
+    try:
+        data = json.loads(fetch(f"{TRANSLATE_URL}?{query}"))
+        out = "".join(seg[0] for seg in data[0] if seg and seg[0]).strip()
+        return out or None
+    except Exception as e:  # noqa: BLE001
+        warn(f"no se pudo traducir «{text[:40]}…»: {e}")
+        return None
+
+
+def translate_items(items):
+    for item in items:
+        lang = TRANSLATE.get(item["source"])
+        if not lang:
+            continue
+        title = translate(item["title"], lang)
+        if title is None:
+            continue  # se deja el original
+        summary = translate(item["summary"], lang) if item["summary"] else ""
+        item["title"] = title
+        item["summary"] = summary if summary is not None else ""
+        item["source"] += " · traducido"
 
 
 def interleave(lists, limit, seen):
@@ -214,16 +291,16 @@ def main():
             try:
                 items = parse_feed(fetch(url), source)
                 if not items:
-                    raise ValueError("el feed no contiene noticias")
+                    raise ValueError("ninguna noticia de las últimas 24 h")
                 per_feed.append(items)
                 ok_feeds += 1
                 print(f"OK   {source:14} {len(items):3} noticias  {url}")
             except Exception as e:  # noqa: BLE001 — cualquier fallo: avisar y seguir
                 failed.append(url)
                 warn(f"{source} ({url}) falló: {e}")
-        sections.append(
-            {"id": sec["id"], "title": sec["title"], "items": interleave(per_feed, MAX_ITEMS, seen)}
-        )
+        items = interleave(per_feed, MAX_ITEMS, seen)
+        translate_items(items)
+        sections.append({"id": sec["id"], "title": sec["title"], "items": items})
 
     if ok_feeds == 0:
         print("ERROR: ningún feed respondió; news.json no se modifica.", file=sys.stderr)

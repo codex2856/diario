@@ -118,7 +118,20 @@
     border-radius: 999px;
     background: var(--chip-bg);
   }
-  nav.sections a:hover, nav.sections a:focus-visible { background: var(--ink); color: var(--paper); outline: none; }
+  nav.sections a:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+  @media (hover: hover) { nav.sections a:hover { outline: 2px solid var(--ink); outline-offset: 1px; } }
+  nav.sections a.active { background: var(--ink); color: var(--paper); }
+  .next {
+    display: block; text-align: center; text-decoration: none;
+    margin: 1.8rem 0 0.5rem; padding: 0.9rem 1rem;
+    border: 1px solid var(--rule); border-radius: 999px;
+    background: var(--chip-bg); font-size: 1rem;
+  }
+  .next small { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+  @media (hover: hover) {
+    .next:hover { background: var(--ink); color: var(--paper); }
+    .next:hover small { color: var(--paper); }
+  }
 
   /* Secciones */
   main { padding-bottom: 1rem; }
@@ -192,7 +205,7 @@
 
 <main class="wrap" id="content"></main>
 
-<div class="wrap">
+<div class="wrap" id="the-end" hidden>
   <div class="the-end">
     <p class="check">Ya estás al día ✓</p>
     <p>Esto es todo por hoy. La próxima edición sale a las 7, 12 y 19 h.</p>
@@ -234,6 +247,10 @@
         { title: "Voorbeeldbericht: treinverkeer rond Arnhem hersteld", summary: "Dit is een voorbeeldsamenvatting om de opmaak te testen.", source: "NOS", link: "https://nos.nl/#n1" },
         { title: "Example story: Dutch housing plan explained", summary: "A sample summary in English to check the layout.", source: "DutchNews", link: "https://www.dutchnews.nl/#n2" },
         { title: "Voorbeeld: weerbericht voor het weekend", summary: "", source: "NOS", link: "https://nos.nl/#n3" }
+      ]},
+      { id: "espana", title: "España", items: [
+        { title: "Noticia de ejemplo: el Congreso aprueba una ley ficticia", summary: "Resumen de ejemplo para la sección de España.", source: "El País", link: "https://elpais.com/#e1" },
+        { title: "Ejemplo: nueva línea de tren entre Madrid y Lisboa", summary: "", source: "El Mundo", link: "https://www.elmundo.es/#e2" }
       ]},
       { id: "latam", title: "Latinoamérica y Venezuela", items: [
         { title: "Noticia de ejemplo desde Caracas", summary: "Resumen ficticio para comprobar el diseño de la sección.", source: "Infobae", link: "https://www.infobae.com/#l1" },
@@ -298,22 +315,65 @@
       '<span class="source">' + esc(item.source) + "</span></a></article>";
   }
 
+  var sectionIds = [];
+
+  function sectionId(sec) {
+    return "s-" + String(sec.id || "").replace(/[^a-z0-9-]/gi, "");
+  }
+
   function render(data) {
     var sections = (data && data.sections) || [];
     var nav = "", body = "";
-    sections.forEach(function (sec) {
-      var id = "s-" + String(sec.id || "").replace(/[^a-z0-9-]/gi, "");
-      nav += '<li><a href="#' + esc(id) + '">' + esc(sec.title) + "</a></li>";
+    sectionIds = [];
+    sections.forEach(function (sec, n) {
+      var id = sectionId(sec);
+      sectionIds.push(id);
+      nav += '<li><a href="#' + esc(id) + '" data-id="' + esc(id) + '">' + esc(sec.title) + "</a></li>";
       var items = sec.items || [];
       var inner = items.length
         ? items.map(function (it, i) { return renderArticle(it, i === 0); }).join("")
         : '<p class="empty">Hoy no ha llegado nada de esta sección.</p>';
-      body += '<section class="news" id="' + esc(id) + '"><h2>' + esc(sec.title) + '</h2><div class="grid">' + inner + "</div></section>";
+      var next = sections[n + 1];
+      var nextLink = next
+        ? '<a class="next" href="#' + esc(sectionId(next)) + '"><small>Siguiente sección</small>' + esc(next.title) + " →</a>"
+        : "";
+      body += '<section class="news" id="' + esc(id) + '" hidden><h2>' + esc(sec.title) + '</h2><div class="grid">' + inner + "</div>" + nextLink + "</section>";
     });
     document.getElementById("nav").innerHTML = nav;
     document.getElementById("content").innerHTML = body;
     renderHeader(data && data.updated);
+    showSection(false);
   }
+
+  // Muestra solo la sección del enlace (#s-...). Sin enlace, la primera.
+  function showSection(scroll) {
+    if (!sectionIds.length) return;
+    var wanted = decodeURIComponent(location.hash.slice(1));
+    var current = sectionIds.indexOf(wanted) >= 0 ? wanted : sectionIds[0];
+    sectionIds.forEach(function (id) {
+      document.getElementById(id).hidden = id !== current;
+    });
+    var links = document.querySelectorAll("#nav a");
+    for (var i = 0; i < links.length; i++) {
+      var active = links[i].getAttribute("data-id") === current;
+      links[i].classList.toggle("active", active);
+      if (active) {
+        links[i].setAttribute("aria-current", "page");
+        var ul = document.getElementById("nav");
+        ul.scrollLeft = links[i].offsetLeft - (ul.clientWidth - links[i].offsetWidth) / 2;
+      } else {
+        links[i].removeAttribute("aria-current");
+      }
+    }
+    // El bloque "Ya estás al día" solo aparece al final de la última sección.
+    document.getElementById("the-end").hidden = current !== sectionIds[sectionIds.length - 1];
+    if (scroll) {
+      var navTop = document.querySelector("nav.sections").offsetTop;
+      window.scrollTo(0, Math.min(window.scrollY, navTop));
+    }
+  }
+
+  window.addEventListener("hashchange", function () { showSection(true); });
 
   function showSample() {
     document.getElementById("preview").hidden = false;
