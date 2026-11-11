@@ -1,0 +1,56 @@
+name: Noticias
+
+on:
+  schedule:
+    # GitHub programa en UTC. Estas horas cubren las 7, 12 y 19 h de Arnhem
+    # tanto en horario de invierno (UTC+1) como de verano (UTC+2).
+    - cron: "5 5,6,10,11,17,18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: noticias
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comprobar la hora en Arnhem
+        id: hora
+        run: |
+          HORA=$(TZ=Europe/Amsterdam date +%H)
+          echo "Hora en Arnhem: $HORA (evento: ${{ github.event_name }})"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "seguir=true" >> "$GITHUB_OUTPUT"
+          elif [ "$HORA" = "07" ] || [ "$HORA" = "12" ] || [ "$HORA" = "19" ]; then
+            echo "seguir=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No es hora de edición; no se hace nada."
+            echo "seguir=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.hora.outputs.seguir == 'true'
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        if: steps.hora.outputs.seguir == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Descargar noticias
+        if: steps.hora.outputs.seguir == 'true'
+        run: python fetch_news.py
+
+      - name: Guardar news.json
+        if: steps.hora.outputs.seguir == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add news.json
+          git diff --cached --quiet || git commit -m "Edición del $(TZ=Europe/Amsterdam date '+%Y-%m-%d %H:%M')"
+          git push

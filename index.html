@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>El Diario de Wilfredo</title>
+<meta name="description" content="Las noticias del día, con principio y final.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4ecd8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1c1a17" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Diario">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23f4ecd8'/%3E%3Ctext x='50' y='72' font-family='Georgia,serif' font-size='64' font-weight='bold' text-anchor='middle' fill='%231a1712'%3EW%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --paper: #f4ecd8;
+    --paper-2: #ece2c9;
+    --ink: #1a1712;
+    --ink-soft: #4a4337;
+    --muted: #7a6f5c;
+    --rule: #2a251d;
+    --rule-soft: #cfc2a3;
+    --accent: #8b1a1a;
+    --chip-bg: #fbf6ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #1c1a17;
+      --paper-2: #26231e;
+      --ink: #ece4d2;
+      --ink-soft: #c9bfab;
+      --muted: #9a8f7b;
+      --rule: #d8ceb9;
+      --rule-soft: #3d3830;
+      --accent: #e0645c;
+      --chip-bg: #26231e;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Georgia, "Times New Roman", Times, serif;
+    line-height: 1.45;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  a { color: inherit; }
+
+  .preview-banner {
+    background: #b3201c;
+    color: #fff;
+    text-align: center;
+    font: bold 0.78rem/1.3 system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.55rem 1rem;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+
+  /* Cabecera */
+  .masthead { text-align: center; padding-top: 1.4rem; }
+  .masthead .tagline {
+    font-style: italic; color: var(--muted); font-size: 0.85rem; margin: 0 0 0.3rem;
+  }
+  .masthead h1 {
+    margin: 0;
+    font-weight: 900;
+    font-size: clamp(2.1rem, 9vw, 4.6rem);
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+  }
+  .double-rule {
+    border: 0;
+    border-top: 3px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    height: 6px;
+    margin: 0.9rem 0 0;
+  }
+  .dateline {
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 1rem;
+    border-bottom: 1px solid var(--rule);
+    padding: 0.45rem 0;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .dateline span:first-child::first-letter { text-transform: uppercase; }
+  @media (max-width: 600px) {
+    .dateline { flex-direction: column; align-items: center; text-align: center; }
+  }
+
+  /* Navegación */
+  nav.sections {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--paper);
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  nav.sections ul {
+    list-style: none; margin: 0; padding: 0.6rem 16px;
+    display: flex; gap: 0.5rem;
+    overflow-x: auto; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    max-width: 1080px; margin: 0 auto;
+  }
+  nav.sections ul::-webkit-scrollbar { display: none; }
+  nav.sections a {
+    display: inline-block; white-space: nowrap;
+    text-decoration: none;
+    font-size: 0.88rem;
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--chip-bg);
+  }
+  nav.sections a:hover, nav.sections a:focus-visible { background: var(--ink); color: var(--paper); outline: none; }
+
+  /* Secciones */
+  main { padding-bottom: 1rem; }
+  section.news {
+    padding-top: 1.6rem;
+    scroll-margin-top: 3.4rem;
+  }
+  section.news > h2 {
+    margin: 0 0 0.9rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    border-top: 3px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding: 0.35rem 0;
+    text-align: center;
+  }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 0; }
+  article { padding: 0.85rem 0; border-bottom: 1px solid var(--rule-soft); }
+  article:last-child { border-bottom: 0; }
+  article a.story { display: block; text-decoration: none; }
+  article h3 { margin: 0 0 0.3rem; font-size: 1.08rem; line-height: 1.25; font-weight: 700; }
+  article a.story:hover h3 { text-decoration: underline; text-underline-offset: 3px; }
+  article p { margin: 0 0 0.35rem; color: var(--ink-soft); font-size: 0.95rem; }
+  .source {
+    font: 0.72rem/1.2 system-ui, -apple-system, sans-serif;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
+  }
+  article.lead h3 { font-size: clamp(1.45rem, 5.5vw, 2.1rem); line-height: 1.12; font-weight: 900; }
+  article.lead p { font-size: 1.03rem; }
+  .empty { font-style: italic; color: var(--muted); padding: 0.6rem 0; }
+
+  @media (min-width: 760px) {
+    .grid { grid-template-columns: 1fr 1fr; column-gap: 2rem; }
+    article.lead { grid-column: 1 / -1; padding-bottom: 1.1rem; }
+    article { border-bottom: 1px solid var(--rule-soft) !important; }
+  }
+  @media (min-width: 1000px) {
+    .grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  /* Final */
+  .the-end {
+    text-align: center;
+    margin: 2.4rem 0 1rem;
+    padding: 1.6rem 1rem;
+    border-top: 3px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .the-end .check { font-size: 1.6rem; font-weight: 900; margin: 0 0 0.3rem; }
+  .the-end p { margin: 0; color: var(--ink-soft); }
+  .the-end .fin { margin-top: 0.8rem; letter-spacing: 0.3em; color: var(--muted); font-size: 0.8rem; }
+  footer { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 0 0 2rem; }
+</style>
+</head>
+<body>
+<div id="preview" class="preview-banner" hidden>Vista previa · noticias de ejemplo, no reales</div>
+
+<header class="wrap masthead">
+  <p class="tagline">Las noticias del día, con principio y final</p>
+  <h1>El Diario de Wilfredo</h1>
+  <hr class="double-rule">
+  <div class="dateline">
+    <span id="date"></span>
+    <span id="updated">Cargando…</span>
+    <span id="edition"></span>
+  </div>
+</header>
+
+<nav class="sections" aria-label="Secciones"><ul id="nav"></ul></nav>
+
+<main class="wrap" id="content"></main>
+
+<div class="wrap">
+  <div class="the-end">
+    <p class="check">Ya estás al día ✓</p>
+    <p>Esto es todo por hoy. La próxima edición sale a las 7, 12 y 19 h.</p>
+    <p class="fin">— FIN —</p>
+  </div>
+</div>
+<footer class="wrap">El Diario de Wilfredo · Arnhem</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var TZ = "Europe/Amsterdam";
+
+  var SAMPLE = {
+    updated: new Date().toISOString(),
+    sections: [
+      { id: "mundo", title: "Mundo", items: [
+        { title: "Titular principal de ejemplo: la cumbre internacional termina con un acuerdo histórico", summary: "Este es un resumen de ejemplo de unas dos líneas para ver cómo queda el titular principal de cada sección en la página.", source: "BBC Mundo", link: "https://www.bbc.com/mundo" },
+        { title: "Noticia de ejemplo sobre la economía global", summary: "Resumen corto de ejemplo.", source: "BBC Mundo", link: "https://www.bbc.com/mundo#1" },
+        { title: "Otra noticia de ejemplo sin resumen", summary: "", source: "BBC Mundo", link: "https://www.bbc.com/mundo#2" },
+        { title: "Un titular de ejemplo un poco más largo para comprobar que el texto se ajusta bien en pantallas pequeñas", summary: "Resumen de ejemplo.", source: "BBC Mundo", link: "https://www.bbc.com/mundo#3" }
+      ]},
+      { id: "politica", title: "Política", items: [
+        { title: "El Parlamento debate una reforma de ejemplo", summary: "Los grupos discuten durante horas una propuesta ficticia que sirve para probar el diseño.", source: "BBC Mundo", link: "https://www.bbc.com/mundo#p1" },
+        { title: "Encuesta de ejemplo muestra un empate técnico", summary: "Datos inventados para la vista previa.", source: "Infobae", link: "https://www.infobae.com/#p2" },
+        { title: "Ministro de ejemplo anuncia nuevas medidas", summary: "", source: "BBC Mundo", link: "https://www.bbc.com/mundo#p3" }
+      ]},
+      { id: "deportes", title: "Deportes", items: [
+        { title: "Victoria de ejemplo en el último minuto del clásico", summary: "Un gol ficticio en el descuento decide el partido de prueba.", source: "Marca", link: "https://www.marca.com/#d1" },
+        { title: "Fichaje de ejemplo sacude el mercado", summary: "Resumen de ejemplo.", source: "ESPN Deportes", link: "https://espndeportes.espn.com/#d2" },
+        { title: "Resultado de ejemplo en la liga de baloncesto", summary: "", source: "Marca", link: "https://www.marca.com/#d3" }
+      ]},
+      { id: "farandula", title: "Farándula", items: [
+        { title: "Estreno de ejemplo arrasa en taquilla", summary: "La película ficticia supera todas las previsiones de la vista previa.", source: "Infobae", link: "https://www.infobae.com/#f1" },
+        { title: "Pareja de ejemplo confirma su boda", summary: "", source: "Infobae", link: "https://www.infobae.com/#f2" }
+      ]},
+      { id: "paises-bajos", title: "Países Bajos", items: [
+        { title: "Voorbeeldbericht: treinverkeer rond Arnhem hersteld", summary: "Dit is een voorbeeldsamenvatting om de opmaak te testen.", source: "NOS", link: "https://nos.nl/#n1" },
+        { title: "Example story: Dutch housing plan explained", summary: "A sample summary in English to check the layout.", source: "DutchNews", link: "https://www.dutchnews.nl/#n2" },
+        { title: "Voorbeeld: weerbericht voor het weekend", summary: "", source: "NOS", link: "https://nos.nl/#n3" }
+      ]},
+      { id: "latam", title: "Latinoamérica y Venezuela", items: [
+        { title: "Noticia de ejemplo desde Caracas", summary: "Resumen ficticio para comprobar el diseño de la sección.", source: "Infobae", link: "https://www.infobae.com/#l1" },
+        { title: "Ejemplo: cumbre regional en Bogotá", summary: "", source: "BBC Mundo", link: "https://www.bbc.com/mundo#l2" }
+      ]},
+      { id: "tecnologia", title: "Tecnología y programación", items: [
+        { title: "Show HN: un proyecto de ejemplo que llega a portada", summary: "Resumen de ejemplo con <etiquetas> & símbolos para comprobar el escapado.", source: "Hacker News", link: "https://news.ycombinator.com/#t1" },
+        { title: "Example review: the gadget everyone is talking about", summary: "Sample summary.", source: "The Verge", link: "https://www.theverge.com/#t2" },
+        { title: "Lenguaje de programación de ejemplo publica nueva versión", summary: "", source: "Hacker News", link: "https://news.ycombinator.com/#t3" }
+      ]}
+    ]
+  };
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function safeUrl(u) {
+    return /^https?:\/\//i.test(String(u || "")) ? u : "#";
+  }
+
+  function hourIn(date) {
+    return parseInt(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: TZ }).format(date), 10);
+  }
+
+  function editionName(date) {
+    var h = hourIn(date);
+    if (h >= 19 || h < 7) return "Edición de la tarde"; // antes de las 7 sigue vigente la de la tarde
+    if (h >= 12) return "Edición de mediodía";
+    return "Edición de la mañana";
+  }
+
+  function renderHeader(updatedIso) {
+    var now = new Date();
+    document.getElementById("date").textContent =
+      new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: TZ }).format(now);
+
+    var upd = updatedIso ? new Date(updatedIso) : null;
+    var updEl = document.getElementById("updated");
+    if (upd && !isNaN(upd)) {
+      var time = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: TZ }).format(upd);
+      var sameDay = new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(upd) ===
+                    new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(now);
+      updEl.textContent = "Actualizado " + (sameDay ? "a las " + time :
+        new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", timeZone: TZ }).format(upd) + ", " + time);
+    } else {
+      updEl.textContent = "Sin fecha de actualización";
+    }
+    document.getElementById("edition").textContent = "Arnhem · " + editionName(upd && !isNaN(upd) ? upd : now);
+  }
+
+  function renderArticle(item, isLead) {
+    var summary = item.summary ? "<p>" + esc(item.summary) + "</p>" : "";
+    return '<article' + (isLead ? ' class="lead"' : '') + '>' +
+      '<a class="story" href="' + esc(safeUrl(item.link)) + '" target="_blank" rel="noopener noreferrer">' +
+      "<h3>" + esc(item.title) + "</h3>" + summary +
+      '<span class="source">' + esc(item.source) + "</span></a></article>";
+  }
+
+  function render(data) {
+    var sections = (data && data.sections) || [];
+    var nav = "", body = "";
+    sections.forEach(function (sec) {
+      var id = "s-" + String(sec.id || "").replace(/[^a-z0-9-]/gi, "");
+      nav += '<li><a href="#' + esc(id) + '">' + esc(sec.title) + "</a></li>";
+      var items = sec.items || [];
+      var inner = items.length
+        ? items.map(function (it, i) { return renderArticle(it, i === 0); }).join("")
+        : '<p class="empty">Hoy no ha llegado nada de esta sección.</p>';
+      body += '<section class="news" id="' + esc(id) + '"><h2>' + esc(sec.title) + '</h2><div class="grid">' + inner + "</div></section>";
+    });
+    document.getElementById("nav").innerHTML = nav;
+    document.getElementById("content").innerHTML = body;
+    renderHeader(data && data.updated);
+  }
+
+  function showSample() {
+    document.getElementById("preview").hidden = false;
+    render(SAMPLE);
+  }
+
+  fetch("news.json", { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function (data) {
+      if (!data || !Array.isArray(data.sections)) throw new Error("formato no válido");
+      render(data);
+    })
+    .catch(showSample);
+})();
+</script>
+</body>
+</html>
